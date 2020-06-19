@@ -1,0 +1,20 @@
+version: '3'
+services:
+  rails:
+    image: rails:SET_A_NAME
+    command: ./entrypoint.sh
+  sidekiq:
+    image: sidekiq:SET_A_NAME
+    command: bundle exec sidekiq -e production -C config/sidekiq.yml
+  web:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.dev.nginx
+    image: web:SET_A_NAME
+    depends_on:
+      - rails
+    ports:
+      - 4000:4000
+    expose:
+      - 4000
+

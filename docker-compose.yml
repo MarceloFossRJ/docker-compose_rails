@@ -1,0 +1,71 @@
+version: '3'
+services:
+  redis:
+    image: 'redis:latest'
+    ports:
+      - "6379:6379"
+    volumes:
+      - journeyctrl-redis:/var/lib/redis/data
+  db:
+    image: 'postgres:9.4.1'
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - '5432:5432'
+    volumes:
+      - SET_A_NAME-db:/var/lib/postgresql/data
+  relay-smtp:
+    image: 'tecnativa/postfix-relay'
+    environment:
+      - MAIL_RELAY_HOST=${SENDMAIL_RELAY_HOST}
+      - MAIL_RELAY_PORT=${SENDMAIL_RELAY_PORT}
+      - MAIL_RELAY_USER=${SENDMAIL_USERNAME}
+      - MAIL_RELAY_PASS=${SENDMAIL_PASSWORD}
+    ports:
+      - 1025:587
+    expose:
+      - 25
+      - 587
+  rails: &app_base
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - SET_A_NAME-static_files:/app/public/uploads
+      - SET_A_NAME-gemfile:/usr/local/bundle
+    depends_on:
+      - db
+      - redis
+      - relay-smtp
+    environment:
+      - AMBIENTE=${AMBIENTE}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - CACHE_URL=${CACHE_URL}
+      - JOB_URL=${JOB_URL}
+      - CABLE_URL=${CABLE_URL}
+      - RAILS_ENV=${RAILS_ENV}
+      - SENDMAIL_HOST=${SENDMAIL_HOST}
+      - SENDMAIL_ADDRESS=${SENDMAIL_ADDRESS}
+      - SENDMAIL_PORT=${SENDMAIL_PORT}
+      - SENDMAIL_DEVISE=${SENDMAIL_DEVISE}
+      - DOMAIN_NAME=${DOMAIN_NAME}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - GITHUB_APP_ID=${GITHUB_APP_ID}
+      - GITHUB_SECRET=${GITHUB_SECRET}
+      - GOOGLE_APP_ID=${GOOGLE_APP_ID}
+      - GOOGLE_SECRET=${GOOGLE_SECRET}
+      - LINKEDIN_APP_ID=${LINKEDIN_APP_ID}
+      - LINKEDIN_SECRET=${LINKEDIN_SECRET}
+      - SUPPORT_EMAIL=${SUPPORT_EMAIL}
+  sidekiq:
+    <<: *app_base
+    ports: []
+    depends_on:
+      - rails
+volumes:
+  SET_A_NAME-db:
+  SET_A_NAME-redis:
+  SET_A_NAME-static_files:
+  SET_A_NAME-gemfile:
